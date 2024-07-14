@@ -1,0 +1,103 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["relationJoins", "omitApi"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  DELIVERYMAN
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  name     String @db.VarChar(150)
+  email    String @unique @db.VarChar(120)
+  cpf      String @unique @db.VarChar(11)
+  password String
+
+  role Role @default(DELIVERYMAN)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("users")
+}
+
+enum Status {
+  WAITING
+  RETIRED
+  DELIVERED
+}
+
+model Order {
+  id Int @id @default(autoincrement())
+
+  recipientId Int @map("recipient_id")
+  addressId   Int @map("address_id")
+
+  postedAt    DateTime? @map("posted_at")
+  retiredAt   DateTime? @map("retired_at")
+  deliveredAt DateTime? @map("delivered_at")
+
+  status Status? @default(WAITING)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  recipient Recipient @relation(fields: [recipientId], references: [id])
+  address   Address   @relation(fields: [addressId], references: [id])
+
+  @@map("orders")
+}
+
+model Recipient {
+  id Int @id @default(autoincrement())
+
+  name String
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  address Address[]
+  order   Order[]
+
+  @@map("recipients")
+}
+
+model Address {
+  id Int @id @default(autoincrement())
+
+  recipientId Int
+
+  address      String  @db.VarChar(50)
+  number       Int?
+  neighborhood String  @db.VarChar(30)
+  city         String  @db.VarChar(30)
+  state        String  @db.Char(2)
+  zipCode      Int     @map("zip_code")
+  complement   String? @db.VarChar(30)
+  description  String? @db.VarChar(150)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  recipient Recipient @relation(fields: [recipientId], references: [id])
+  order     Order[]
+
+  @@map("addresses")
+}
