@@ -8,11 +8,7 @@ const envSchema = z.object({
 
   FRONTEND_URL: z.string().default('https://localhost:5173'),
 
-  MAILER_API_KEY: z
-    .string()
-    .default(
-      'mlsn.b25ff8b094b382564d3350befb7d8bcbb382e41d2defefab41b23bc383c064bb',
-    ),
+  MAILER_API_KEY: z.string(),
 })
 
 const _env = envSchema.safeParse(process.env)
