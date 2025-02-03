@@ -20,17 +20,22 @@ enum Role {
 }
 
 model User {
-  id       Int    @id @default(autoincrement())
-  name     String @db.VarChar(150)
-  email    String @unique @db.VarChar(120)
-  cpf      String @unique @db.VarChar(11)
-  password String
+  id       String  @id @default(uuid())
+  name     String  @db.VarChar(150)
+  email    String  @unique @db.VarChar(120)
+  password String  @default(uuid())
+  active   Boolean @default(true)
+  cpf      String  @unique @db.VarChar(11)
+
+  addressId String? @map("address_id")
 
   role Role @default(DELIVERYMAN)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @default(now()) @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
+
+  address Address? @relation(fields: [addressId], references: [id])
 
   @@map("users")
 }
@@ -39,49 +44,46 @@ enum Status {
   WAITING
   RETIRED
   DELIVERED
+  RETURNED
 }
 
 model Order {
-  id Int @id @default(autoincrement())
+  id String @id @default(uuid())
 
-  recipientId Int @map("recipient_id")
-  addressId   Int @map("address_id")
+  recipientId String @map("recipient_id")
 
   postedAt    DateTime? @map("posted_at")
   retiredAt   DateTime? @map("retired_at")
   deliveredAt DateTime? @map("delivered_at")
 
-  status Status? @default(WAITING)
+  status Status @default(WAITING)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
   recipient Recipient @relation(fields: [recipientId], references: [id])
-  address   Address   @relation(fields: [addressId], references: [id])
 
   @@map("orders")
 }
 
 model Recipient {
-  id Int @id @default(autoincrement())
+  id String @id @default(uuid())
 
-  name String
+  name      String
+  addressId String @map("address_id")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
-  address Address[]
-  order   Order[]
+  order Order[]
 
   @@map("recipients")
 }
 
 model Address {
-  id Int @id @default(autoincrement())
-
-  recipientId Int
+  id String @id @default(uuid())
 
   address      String  @db.VarChar(50)
   number       Int?
@@ -96,8 +98,7 @@ model Address {
   updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
-  recipient Recipient @relation(fields: [recipientId], references: [id])
-  order     Order[]
+  user User[]
 
   @@map("addresses")
 }

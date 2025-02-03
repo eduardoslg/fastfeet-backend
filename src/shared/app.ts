@@ -1,34 +1,35 @@
 import fastify from 'fastify'
 import {
+  jsonSchemaTransform,
   serializerCompiler,
   validatorCompiler,
-  jsonSchemaTransform,
   ZodTypeProvider,
 } from 'fastify-type-provider-zod'
+import qs from 'qs'
 
-import { env } from '@/config/env'
+import { env } from '@/env'
 import { appRoutes } from '@/routes'
-import fastifyCors from '@fastify/cors'
-import fastifyJwt from '@fastify/jwt'
-import fastifySwagger from '@fastify/swagger'
-import fastifySwaggerUI from '@fastify/swagger-ui'
+import { fastifyCors } from '@fastify/cors'
+import jwt from '@fastify/jwt'
+import swagger from '@fastify/swagger'
+import { fastifySwaggerUi } from '@fastify/swagger-ui'
 
-import { errorHandler } from './errors'
-import { getInternationalizedData } from './utils/getInternationalizedData'
-import { getLanguage } from './utils/getLanguage'
+import { errorHandler } from './errors/error-handler'
 
-export const app = fastify().withTypeProvider<ZodTypeProvider>()
+export const app = fastify({
+  querystringParser: (str) => qs.parse(str),
+}).withTypeProvider<ZodTypeProvider>()
 
 app.setValidatorCompiler(validatorCompiler)
 app.setSerializerCompiler(serializerCompiler)
 
 app.setErrorHandler(errorHandler)
 
-app.register(fastifySwagger, {
+app.register(swagger, {
   openapi: {
     info: {
-      title: 'FastFeet',
-      description: 'Especificações da API Rest',
+      title: 'Colo de Maria API',
+      description: 'API documentation for Colo de Maria project',
       version: '1.0.0',
     },
     components: {
@@ -44,30 +45,20 @@ app.register(fastifySwagger, {
   transform: jsonSchemaTransform,
 })
 
-app.register(fastifySwaggerUI, {
+app.register(fastifySwaggerUi, {
   routePrefix: '/docs',
   theme: {
-    title: 'FastFeet API',
+    title: 'OCPP OpenAPI',
   },
 })
 
-app.register(fastifyJwt, {
+app.register(jwt, {
   secret: env.JWT_SECRET,
 })
 
 app.register(fastifyCors, {
   exposedHeaders: ['x-total-count', 'Content-Disposition'],
+  origin: '*',
 })
 
 app.register(appRoutes)
-
-app.addHook('preSerialization', async (request, _, payload: any) => {
-  if ('issues' in payload) {
-    return payload
-  }
-
-  return getInternationalizedData(
-    payload,
-    getLanguage(request.headers['x-selected-language'] as string),
-  )
-})

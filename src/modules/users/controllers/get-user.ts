@@ -4,41 +4,35 @@ import z from 'zod'
 
 import { authorization } from '@/middlewares/authorization'
 
-import { makeUpdateUserUseCase } from '../use-cases/factories/make-update'
+import { makeGetUserUseCase } from '../use-cases/factories/make-get'
 
-export async function updateUserController(app: FastifyInstance) {
-  app.withTypeProvider<ZodTypeProvider>().put(
+export async function getUserController(app: FastifyInstance) {
+  app.withTypeProvider<ZodTypeProvider>().get(
     '/users/:id',
     {
       onRequest: authorization,
       schema: {
         tags: ['Usuários'],
-        summary: 'Atualização de usuário',
+        summary: 'Obter dados de um usuário',
         security: [{ bearerAuth: [] }],
-        body: z.object({
-          name: z.string().min(1),
-        }),
         params: z.object({
           id: z.coerce.string(),
         }),
         response: {
           201: z.object({
             id: z.string(),
-            name: z.string(),
+            name: z.string().optional(),
+            email: z.string(),
           }),
         },
       },
     },
     async (request, reply) => {
-      const { name } = request.body
       const { id } = request.params
 
-      const updateUserUseCase = makeUpdateUserUseCase()
+      const getUserUseCase = makeGetUserUseCase()
 
-      const output = await updateUserUseCase.execute({
-        id,
-        name,
-      })
+      const output = await getUserUseCase.execute(id)
 
       return reply.status(200).send(output)
     },

@@ -1,8 +1,7 @@
 import 'fastify'
 
 export type UserData = {
-  userId: number
-  role: string
+  userId: string
 }
 
 declare module 'fastify' {

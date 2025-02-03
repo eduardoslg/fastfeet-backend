@@ -1,26 +1,38 @@
 import { FastifyInstance } from 'fastify'
 import { ZodTypeProvider } from 'fastify-type-provider-zod'
+import z from 'zod'
 
-import { auth } from '@/middlewares/verify-jwt'
+import { authorization } from '@/middlewares/authorization'
 
-import { deleteUserSchema } from '../schemas/delete-user'
-import { makeDeleteUserUseCase } from '../use-cases/factories/make-delete-user'
+import { makeDeleteUserUseCase } from '../use-cases/factories/make-delete'
 
 export async function deleteUserController(app: FastifyInstance) {
-  app
-    .register(auth)
-    .withTypeProvider<ZodTypeProvider>()
-    .delete('/v1/users/:id', deleteUserSchema, async (request, reply) => {
-      const user = await request.getCurrentUser()
+  app.withTypeProvider<ZodTypeProvider>().delete(
+    '/users/:id',
+    {
+      onRequest: authorization,
+      schema: {
+        tags: ['Usuários'],
+        summary: 'Deletar um usuário',
+        security: [{ bearerAuth: [] }],
+        params: z.object({
+          id: z.coerce.string(),
+        }),
+        response: {
+          201: z.object({
+            id: z.string(),
+          }),
+        },
+      },
+    },
+    async (request, reply) => {
       const { id } = request.params
 
       const deleteUserUseCase = makeDeleteUserUseCase()
 
-      const output = await deleteUserUseCase.execute({
-        id,
-        clientId: user.clientId,
-      })
+      const output = await deleteUserUseCase.execute(id)
 
       return reply.status(200).send(output)
-    })
+    },
+  )
 }
